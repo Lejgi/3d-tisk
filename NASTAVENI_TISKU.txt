@@ -1,56 +1,61 @@
 Držák na medaile — Matěj, Kuba, Filip
-Tisk na Creality Ender 3 V3 SE, tryska 0,4 mm, PLA Basic
+Černá deska, bílé jméno a bílé dílky míče
+Tisk na Creality Ender 3 V3 SE, tryska 0,4 mm, PLA
+
+Tiskárna má jednu trysku, takže barvy jsou dva tisky. Bílé díly se vlepí
+do lůžek v černém držáku. Háčky, rámeček a mezery mezi dílky míče zůstanou černé.
 
 SOUBORY
-  modely/drzak-medaile-Matej.3mf
-  modely/drzak-medaile-Kuba.3mf
-  modely/drzak-medaile-Filip.3mf
+  Černý držák, tisknout černou PLA:
+    modely/drzak-medaile-Matej.3mf
+    modely/drzak-medaile-Kuba.3mf
+    modely/drzak-medaile-Filip.3mf
 
-Tři držáky jsou stejné. Mění se jen vystouplé jméno.
-Na každém je fotbalový míč, jméno a 7 háčků na stuhy medailí.
-Další jméno se dá doplnit do seznamu NAMES ve skriptu generate_drzak.py.
+  Bílé jméno a bílé dílky míče, tisknout bílou PLA:
+    modely/drzak-medaile-Matej-bile.3mf
+    modely/drzak-medaile-Kuba-bile.3mf
+    modely/drzak-medaile-Filip-bile.3mf
 
 ROZMĚRY
-  Deska 200 × 180 × 6 mm
-  Háčky vystupují do výšky 23,4 mm
-  Vejde se na podložku 220 × 220 mm (vůle 10 mm na každé straně do šířky)
+  Deska 200 × 180 × 6 mm, háčky do výšky 23,4 mm
+  Bílé vložky jsou placky vysoké 1,6 mm
+  Vejde se na podložku 220 × 220 mm
 
-JAK TO POLOŽIT NA PODLOŽKU
-  Rovná zadní strana dolů, háčky nahoru.
-  Model už tak v souboru leží. V sliceru ho neotáčejte.
-  Podpěry: vypnout. Převisy na háčcích jsou strmější než 45°.
+ČERNÝ TISK
+  Rovná zadní strana dolů, háčky nahoru. Neotáčet.
+  Podpěry vypnout.
+  Brim 5 mm.
 
-MATERIÁL PLA BASIC (1,75 mm)
-  Tryska          205 °C   (první vrstva 210 °C)
-                  rozsah materiálu je 190–220 °C, přes 220 °C nechoďte
+BÍLÝ TISK
+  Dílky už leží na podložce. Neotáčet, podpěry vypnout.
+  Brim 3 mm.
+  Je to tenká vrstva, tisk trvá krátce.
+  Každý dílek má svůj tvar lůžka. Háček nad ě a tečky nad i a j
+  jsou spojené s písmenem, ať se neztratí.
+
+MATERIÁL PLA (1,75 mm), černá i bílá stejné nastavení
+  Tryska          205 °C, první vrstva 210 °C
+                  rozsah 190–220 °C
   Podložka        60 °C
-                  rozsah materiálu je 45–60 °C, u desky 200 mm držte 60 °C
-  Rychlost        vnější stěny 50 mm/s
-                  vnitřní stěny 60 mm/s
-                  výplň 80–100 mm/s
-                  doporučené pásmo materiálu je 50–100 mm/s
-                  na nápis nepoužívejte 150 mm/s, písmena se rozmažou
+  Rychlost        vnější stěny 50 mm/s, výplň 80–100 mm/s
   Výška vrstvy    0,20 mm
   Šířka čáry      0,42 mm
   Stěny           4
   Plné vrstvy     5 dole a 5 nahoře
   Výplň           20 % gyroid
   Chlazení        100 % od 4. vrstvy
-  Brim            5 mm, ať se nezvednou rohy
 
-Volitelně dvě barvy bez AMS: v Creality Print / Cura vyměňte filament
-ve výšce 6,0 mm (vrstva 30 při výšce vrstvy 0,20 mm).
-Deska zůstane v první barvě, jméno, míč, rámeček a háčky ve druhé.
+SLEPENÍ
+  Do lůžka kapka sekundového lepidla, dílek vtlačit a přebytky setřít.
+  Bílé dílky jsou o 0,3 mm menší než lůžko, zapadnou a vystupují o 0,6 mm.
+  Když nějaký dílek nejde dovnitř, obruste první vrstvu na jeho spodní hraně.
+  Díra v písmenech a, b, e, p zůstane černá.
 
 PŘIVRUTOVÁNÍ NA ZEĎ
-  4× zápustný vrut 4×40 mm (hlava asi 8–8,5 mm)
-  4× hmoždinka 6 mm
-  Otvory v desce jsou Ø 5,8 mm, zápust Ø 11 mm, hlava zapadne pod povrch.
-  Rozteč středů otvorů: 152 mm vodorovně, 132 mm svisle.
-  Desku lze přiložit na zeď a otvory obkreslit.
-  Vruty jen dotáhněte, PLA nechce přetažený šroub.
+  4× zápustný vrut 4×40 mm a hmoždinka 6 mm
+  Rozteč středů otvorů: 152 mm vodorovně, 132 mm svisle
+  Vruty jen dotáhnout.
 
 MEDAILE
-  Stuhu navlékněte přes hlavu háčku. Dřík je Ø 7 mm, hlava Ø 11,4 mm.
-  Háčků je 7, rozteč 24 mm. Vedle sebe se vejdou běžné stuhy,
-  medaile pak visí pod deskou.
+  Stuhu navléknout přes hlavu háčku. Dřík Ø 7 mm, hlava Ø 11,4 mm.
+  Háčků je 7, rozteč 24 mm.
