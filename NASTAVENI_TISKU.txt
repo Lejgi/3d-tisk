@@ -1,39 +1,27 @@
 Držák na medaile — Matěj, Kuba, Filip
-Černá deska, bílé jméno a bílé dílky míče
-Tisk na Creality Ender 3 V3 SE, tryska 0,4 mm, PLA
-
-Tiskárna má jednu trysku, takže barvy jsou dva tisky. Bílé díly se vlepí
-do lůžek v černém držáku. Háčky, rámeček a mezery mezi dílky míče zůstanou černé.
+Černá deska a háčky, bílé jméno a bílé dílky míče
+Jeden tisk, výměna filamentu za pochodu
+Creality Ender 3 V3 SE, tryska 0,4 mm, PLA
 
 SOUBORY
-  Černý držák, tisknout černou PLA:
-    modely/drzak-medaile-Matej.3mf
-    modely/drzak-medaile-Kuba.3mf
-    modely/drzak-medaile-Filip.3mf
+  modely/drzak-medaile-Matej.3mf
+  modely/drzak-medaile-Kuba.3mf
+  modely/drzak-medaile-Filip.3mf
 
-  Bílé jméno a bílé dílky míče, tisknout bílou PLA:
-    modely/drzak-medaile-Matej-bile.3mf
-    modely/drzak-medaile-Kuba-bile.3mf
-    modely/drzak-medaile-Filip-bile.3mf
+VÝMĚNA FILAMENTU
+  Model leží rovnou zadní stranou na podložce. Neotáčet, podpěry vypnout.
+  Do výšky 6,0 mm tisknout černou PLA.
+  Od výšky 6,0 mm tisknout bílou PLA.
+  Při výšce vrstvy 0,20 mm je to začátek 31. vrstvy.
+  Ve sliceru v náhledu vrstev přidat na tuto výšku „Filament change“
+  nebo „Change filament“. Do té vrstvy černá, od ní bílá.
+  Nad 6,0 mm už jsou jen písmena a dílky míče, nic jiného.
 
 ROZMĚRY
-  Deska 200 × 180 × 6 mm, háčky do výšky 23,4 mm
-  Bílé vložky jsou placky vysoké 1,6 mm
-  Vejde se na podložku 220 × 220 mm
+  200 × 202 × 7,6 mm
+  Na podložku 220 × 220 mm se vejde. Brim dejte jen 3 mm.
 
-ČERNÝ TISK
-  Rovná zadní strana dolů, háčky nahoru. Neotáčet.
-  Podpěry vypnout.
-  Brim 5 mm.
-
-BÍLÝ TISK
-  Dílky už leží na podložce. Neotáčet, podpěry vypnout.
-  Brim 3 mm.
-  Je to tenká vrstva, tisk trvá krátce.
-  Každý dílek má svůj tvar lůžka. Háček nad ě a tečky nad i a j
-  jsou spojené s písmenem, ať se neztratí.
-
-MATERIÁL PLA (1,75 mm), černá i bílá stejné nastavení
+MATERIÁL PLA (1,75 mm), obě barvy stejné nastavení
   Tryska          205 °C, první vrstva 210 °C
                   rozsah 190–220 °C
   Podložka        60 °C
@@ -45,17 +33,10 @@ MATERIÁL PLA (1,75 mm), černá i bílá stejné nastavení
   Výplň           20 % gyroid
   Chlazení        100 % od 4. vrstvy
 
-SLEPENÍ
-  Do lůžka kapka sekundového lepidla, dílek vtlačit a přebytky setřít.
-  Bílé dílky jsou o 0,3 mm menší než lůžko, zapadnou a vystupují o 0,6 mm.
-  Když nějaký dílek nejde dovnitř, obruste první vrstvu na jeho spodní hraně.
-  Díra v písmenech a, b, e, p zůstane černá.
-
-PŘIVRUTOVÁNÍ NA ZEĎ
-  4× zápustný vrut 4×40 mm a hmoždinka 6 mm
-  Rozteč středů otvorů: 152 mm vodorovně, 132 mm svisle
+HÁČKY A ZEĎ
+  Háčky jsou na spodní hraně, v černé části.
+  Stuhu navlékněte přes širší konec zdola, sedne do užšího krčku.
+  Háčků je 7.
+  4× zápustný vrut 4×40 mm a hmoždinka 6 mm.
+  Rozteč středů otvorů: 152 mm vodorovně, 132 mm svisle.
   Vruty jen dotáhnout.
-
-MEDAILE
-  Stuhu navléknout přes hlavu háčku. Dřík Ø 7 mm, hlava Ø 11,4 mm.
-  Háčků je 7, rozteč 24 mm.

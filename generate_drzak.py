@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """Generate wall-mounted football medal holders as 3MF files.
 
-One black plaque per name, plus a white inlay sheet (name and ball panels).
-The Ender 3 V3 SE has a single nozzle, so the two colors are two prints
-that glue together. Designed for a 0.4 mm nozzle and PLA.
+One solid per name. Printed flat on an Ender 3 V3 SE, 0.4 mm nozzle.
+Everything up to 6.0 mm is black. From 6.0 mm upward only the name and
+the soccer-ball panels remain, so a single filament change turns them white.
+Medal hooks are tabs on the bottom edge, inside the black layers.
 """
 
 from __future__ import annotations
@@ -56,11 +57,9 @@ BALL_R = 20.0
 BALL_CX = 0.0
 BALL_CY = 28.0
 BALL_GAP = 1.2
-# Black disc. White panels sit in 1 mm pockets and stand 0.6 mm proud.
-BALL_BODY_H = 2.2
-POCKET_DEPTH = 1.0
-INLAY_H = 1.6
-INLAY_CLEARANCE = 0.30
+# Filament change plane. Geometry above this is only the name and ball panels.
+COLOR_Z = 6.0
+WHITE_H = 1.6
 
 PEG_Y = -50.0
 PEG_XS = [-72.0, -48.0, -24.0, 0.0, 24.0, 48.0, 72.0]
@@ -69,7 +68,7 @@ CAP_R = 5.7
 BASE_R = 5.6
 
 FONT_SIZE = 36.0
-TEXT_H = 1.8
+TEXT_H = 1.6
 # Shared baseline so descenders (j, p) hang the same way on every plaque.
 BASELINE_Y = -27.5
 
@@ -208,34 +207,24 @@ def rounded_plate(w: float, h: float, t: float, r: float) -> cq.Workplane:
     return cq.Workplane("XY").rect(w, h).extrude(t).edges("|Z").fillet(r)
 
 
-def frame_solid() -> cq.Workplane:
-    # Same outline as the plaque, so the rim follows the rounded corners.
-    outer = rounded_plate(W, H, FRAME_H + 0.05, CORNER_R)
-    inner = rounded_plate(W - 12.0, H - 12.0, FRAME_H + 0.8, 4.0)
-    inner = inner.translate((0, 0, -0.3))
-    return outer.cut(inner).translate((0, 0, T - 0.02))
+def hook_at(x: float) -> cq.Workplane:
+    """Downward ribbon hook in the plane of the plaque, entirely below the color change."""
+    root = cq.Workplane("XY").center(x, -94.6).rect(11.0, 10.0).extrude(T)
+    neck = cq.Workplane("XY").center(x, -103.0).rect(7.2, 8.0).extrude(T)
+    head = cq.Workplane("XY").center(x, -109.2).rect(13.0, 6.2).extrude(T).edges("|Z").fillet(2.0)
+    return root.union(neck).union(head)
 
 
-def peg_solid() -> cq.Workplane:
-    # Profile in the XZ plane, revolved around Z. Wider base and the
-    # underside of the cap stay at or steeper than 45 degrees.
-    pts = [
-        (0.0, 0.0),
-        (BASE_R, 0.0),
-        (SHAFT_R, 2.2),
-        (SHAFT_R, 12.6),
-        (CAP_R, 15.2),
-        (CAP_R, 16.4),
-        (4.2, 17.6),
-        (0.0, 17.6),
-    ]
-    return (
-        cq.Workplane("XZ")
-        .polyline(pts)
-        .close()
-        # XZ workplane: local Y is global Z, so the peg stands up off the bed.
-        .revolve(360, (0, 0, 0), (0, 1, 0))
-    )
+def border_groove() -> cq.Workplane:
+    outer = rounded_plate(W - 8.0, H - 8.0, 1.2, 4.0)
+    inner = rounded_plate(W - 11.2, H - 11.2, 1.6, 2.4).translate((0, 0, -0.2))
+    return outer.cut(inner).translate((0, 0, COLOR_Z - 0.6))
+
+
+def ball_ring() -> cq.Workplane:
+    outer = cq.Workplane("XY").circle(22.2).extrude(1.2).translate((BALL_CX, BALL_CY, COLOR_Z - 0.6))
+    inner = cq.Workplane("XY").circle(20.6).extrude(1.6).translate((BALL_CX, BALL_CY, COLOR_Z - 0.8))
+    return outer.cut(inner)
 
 
 def polygon_solid(poly: Polygon, z0: float, height: float, dx: float = 0.0, dy: float = 0.0) -> cq.Workplane:
@@ -282,7 +271,7 @@ def name_workplane(name: str) -> cq.Workplane:
         halign="center",
         valign="bottom",
     )
-    return text.translate((0, BASELINE_Y, 0))
+    return text.translate((0, BASELINE_Y, COLOR_Z))
 
 
 def footprint(solid: cq.Shape) -> Polygon:
@@ -426,35 +415,30 @@ def check_layout(name_bb: tuple[float, float, float, float]) -> None:
         raise RuntimeError(f"name is too wide: {xmax - xmin:.1f} mm")
     if ymax > BALL_CY - BALL_R - 4:
         raise RuntimeError("name collides with the ball")
-    if ymin < PEG_Y + CAP_R + 4:
-        raise RuntimeError("name collides with the pegs")
-    if max(abs(x) for x in PEG_XS) + CAP_R > W / 2 - 8.0:
-        raise RuntimeError("pegs collide with the frame")
-    hole_x = W / 2 - HOLE_INSET_X
-    hole_y = -(H / 2 - HOLE_INSET_Y)
-    # Distance from outer peg center to the nearest bottom mounting hole.
-    dx = abs(PEG_XS[-1] - hole_x)
-    dy = abs(PEG_Y - hole_y)
-    dist = (dx**2 + dy**2) ** 0.5
-    if dist < CAP_R + CSINK_D / 2 + 3:
-        raise RuntimeError(f"peg too close to a mounting hole ({dist:.1f} mm)")
+    if ymin < -H / 2 + 8:
+        raise RuntimeError("name collides with the bottom edge")
+    if max(abs(x) for x in PEG_XS) + 6.5 > W / 2 - 8:
+        raise RuntimeError("hooks extend past the plaque edge")
     top_limit = H / 2 - HOLE_INSET_Y - CSINK_D / 2 - 4
     if BALL_CY + BALL_R > top_limit:
         raise RuntimeError("ball collides with a mounting hole")
 
 
-def build_common(panels: list[Polygon]) -> cq.Workplane:
-    parts: list[cq.Workplane] = [
-        rounded_plate(W, H, T, CORNER_R),
-        frame_solid(),
-        ball_disc(),
-    ]
-    peg = peg_solid().translate((0, 0, T - 0.2))
+def build_black() -> cq.Workplane:
+    parts: list[cq.Workplane] = [rounded_plate(W, H, T, CORNER_R)]
     for x in PEG_XS:
-        parts.append(peg.translate((x, PEG_Y, 0)))
+        parts.append(hook_at(x))
+    print("  skládám desku a háčky", flush=True)
     body = fuse_many(parts)
-    print("  vyřezávám lůžka míče", flush=True)
-    return body.cut(fuse_many(ball_pockets(panels)))
+    body = apply_holes(body)
+    return body.cut(border_groove()).cut(ball_ring())
+
+
+def build_white(name: str, panels: list[Polygon]) -> cq.Workplane:
+    parts = [name_workplane(name)]
+    parts.extend(polygon_solid(poly, COLOR_Z, WHITE_H, BALL_CX, BALL_CY) for poly in panels)
+    print(f"  přidávám bílé jméno a panely ({len(parts)} dílů)", flush=True)
+    return fuse_many(parts)
 
 
 def apply_holes(body: cq.Workplane) -> cq.Workplane:
@@ -744,24 +728,33 @@ def meshes_from_parts(parts: list[cq.Workplane]) -> trimesh.Trimesh:
     return combined
 
 
-def render_color_preview(black: trimesh.Trimesh, white: trimesh.Trimesh, path: Path) -> None:
+def render_color_preview(mesh: trimesh.Trimesh, path: Path) -> None:
     from PIL import Image, ImageDraw
 
-    scale = 8
-    xmin, xmax = -105, 105
-    ymin, ymax = -95, 95
+    scale = 7
+    xmin, xmax = -115.0, 115.0
+    ymin, ymax = -125.0, 100.0
     image = Image.new("RGB", (int((xmax - xmin) * scale), int((ymax - ymin) * scale)), (214, 216, 214))
     draw = ImageDraw.Draw(image)
-
-    def paint(mesh: trimesh.Trimesh, color: tuple[int, int, int]) -> None:
-        triangles = mesh.vertices[mesh.faces]
-        order = np.argsort(triangles[:, :, 2].mean(axis=1))
-        for tri in triangles[order]:
-            draw.polygon([((x - xmin) * scale, (ymax - y) * scale) for x, y, _z in tri], fill=color)
-
-    paint(black, (24, 24, 26))
-    paint(white, (245, 245, 242))
+    triangles = mesh.vertices[mesh.faces]
+    order = np.argsort(triangles[:, :, 2].mean(axis=1))
+    for tri in triangles[order]:
+        color = (245, 245, 242) if float(tri[:, 2].mean()) > COLOR_Z + 0.2 else (24, 24, 26)
+        draw.polygon([((x - xmin) * scale, (ymax - y) * scale) for x, y, _z in tri], fill=color)
     image.save(path)
+
+
+def assert_color_split(mesh: trimesh.Trimesh, name: str) -> None:
+    triangles = mesh.vertices[mesh.faces]
+    zmin = triangles[:, :, 2].min(axis=1)
+    zmax = triangles[:, :, 2].max(axis=1)
+    crossing = (zmin < COLOR_Z - 0.08) & (zmax > COLOR_Z + 0.08)
+    if crossing.any():
+        raise RuntimeError(f"{name}: {int(crossing.sum())} triangles cross the filament change")
+    if mesh.bounds[1][2] < COLOR_Z + WHITE_H - 0.15:
+        raise RuntimeError(f"{name}: white name and panels are missing")
+    if mesh.extents[0] > 210 or mesh.extents[1] > 210:
+        raise RuntimeError(f"{name} does not leave room for a brim: {mesh.extents}")
 
 
 def main() -> None:
@@ -781,60 +774,33 @@ def main() -> None:
         f"Y {bb.ymin:.1f}..{bb.ymax:.1f}"
     )
 
-    print("Sestavuji společné černé tělo (deska, rám, míč, háčky, lůžka panelů)…")
-    common = build_common(panels)
-    ball_white = [fit_inlay(affinity.translate(poly, xoff=BALL_CX, yoff=BALL_CY)) for poly in panels]
+    print("Sestavuji černou desku s háčky…")
+    black = build_black()
 
     for name in NAMES:
         print(f"Sestavuji {name}…")
-        glyphs = glyphs_for(name)
-        print("  vyřezávám lůžka jména a otvory na vruty", flush=True)
-        body = apply_holes(common.cut(fuse_many(name_pockets(glyphs))))
-        black_mesh = shape_to_mesh(body)
-        validate_mesh(black_mesh, name)
-
-        sheet, sheet_size = layout_sheet(glyphs, panels)
-        if sheet_size[0] > BED_X - 8 or sheet_size[1] > BED_Y - 8:
-            raise RuntimeError(f"white sheet does not fit the bed: {sheet_size}")
-        white_parts = [polygon_solid(poly, 0.0, INLAY_H) for poly in sheet]
-        white_mesh = meshes_from_parts(white_parts)
-        validate_mesh(white_mesh, f"{name} bile")
-        print(f"  bílý plát {sheet_size[0]:.0f} x {sheet_size[1]:.0f} mm, dílů {len(sheet)}")
-
-        assembled = meshes_from_parts(
-            [polygon_solid(fit_inlay(poly), T - POCKET_DEPTH, INLAY_H) for poly in glyphs]
-            + [polygon_solid(poly, T + BALL_BODY_H - POCKET_DEPTH, INLAY_H) for poly in ball_white]
-        )
-        for poly, inlay in zip(glyphs, (fit_inlay(poly) for poly in glyphs)):
-            if not poly.buffer(0.05).covers(inlay):
-                raise RuntimeError(f"{name}: white letter does not fit its pocket")
-
-        stem = filename_for(name).removesuffix(".3mf")
-        black_path = OUT_DIR / f"{stem}.3mf"
-        white_path = OUT_DIR / f"{stem}-bile.3mf"
+        body = black.union(build_white(name, panels))
+        mesh = shape_to_mesh(body)
+        validate_mesh(mesh, name)
+        assert_color_split(mesh, name)
+        out = OUT_DIR / filename_for(name)
         write_3mf(
-            black_mesh,
-            black_path,
-            f"Drzak medaile {name} cerny",
+            mesh,
+            out,
+            f"Drzak medaile {name}",
             (
-                f"Cerna cast drzaku {name}. Tisknout cernou PLA, hacky nahoru, bez podpor. "
-                "Jmeno a dily mice jsou luzka pro bile vlozky."
+                f"Drzak na medaile {name}. Tisknout cerne PLA do vysky {COLOR_Z:.1f} mm, "
+                f"pak vymenit za bile PLA. Bile jsou jen jmeno a dily mice. "
+                "Hacky jsou na spodni hrane. Bez podpor."
             ),
         )
-        write_3mf(
-            white_mesh,
-            white_path,
-            f"Drzak medaile {name} bily",
-            (
-                f"Bile vlozky jmena {name} a dilu mice. Tisknout bilou PLA na vysku 1,6 mm "
-                "a vlepit do luzek cerneho drzaku."
-            ),
+        print(
+            f"  ulozeno {out.name}, vymena filamentu ve vysce {COLOR_Z:.1f} mm, "
+            f"rozmer {mesh.extents[0]:.0f} x {mesh.extents[1]:.0f} x {mesh.extents[2]:.1f} mm"
         )
-        print(f"  ulozeno {black_path.name} a {white_path.name}")
-        render_color_preview(black_mesh, assembled, PREVIEW_DIR / f"{stem}-shora.png")
+        render_color_preview(mesh, PREVIEW_DIR / f"{filename_for(name).removesuffix('.3mf')}-shora.png")
         if name == "Matěj":
-            render_views(black_mesh, "matej")
-            save_sections(black_mesh)
+            save_sections(mesh)
 
 
 if __name__ == "__main__":
