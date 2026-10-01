@@ -1,0 +1,60 @@
+Maska — reliéf podle fotky
+================================
+
+Soubory
+-------
+modely/maska-hollow.3mf
+    Obojí pohromadě: bílá maska a vínové pruhy. Tak se model otevírá
+    v prohlížeči, barvy jsou v souboru (bílá #F4F4F2, vínová #8E1E2C).
+
+modely/maska-hollow-bila.3mf
+    Jen bílá maska. Tohle tiskni na Enderu. V pruzích jsou vyhloubené
+    drážky, ať je pak můžeš vybarvit.
+
+Rozměr na podložce: 98 × 192 × 16 mm. Vejde se na Ender 3 V3 SE
+(220 × 220 × 250 mm) s rezervou na límec.
+
+Jak je model udělaný
+---------------------
+- Silueta, oko, zuby a tři pruhy jsou podle dodané fotky.
+- Záda jsou rovná a leží na podložce. Tiskne se naplocho, čelem nahoru.
+- Tělo je bílé, tlusté asi 4,8 mm, obličej je vyklenutý (nejvyšší místo
+  kolem 16 mm).
+- Oko je průchozí otvor.
+- Pět zubů je oddělených mezerou a drží na čelisti.
+- Pruhy jsou drážky hluboké asi 1,3 mm. V barevném 3MF v nich leží
+  červené těleso.
+
+Proč to není jedna výměna filamentu jako u držáku medailí
+---------------------------------------------------------
+U držáku šla bílá vrstva odříznout v jedné výšce. Tady pruhy stoupají
+po hřebeni a po vyklenutém obličeji, takže nejsou v jedné vrstvě.
+Jedna pauza ve výšce Z je neoddělí od bílé.
+
+Tisk na Ender 3 V3 SE (jedna tryska)
+------------------------------------
+Otevři modely/maska-hollow-bila.3mf.
+
+- Materiál: PLA Basic, bílá
+- Tryska 0,4 mm, vrstva 0,20 mm, šířka linky 0,42 mm
+- Tryska 205 °C, podložka 60 °C
+- Stěny: 4 (1,6 mm)
+- Výplň: 12–15 %, gyroid nebo mřížka
+- Límec (brim): 5 mm — chytí špičky hřebene a zuby
+- Podpěry: vypnout. Záda jsou rovná, všechno nad nimi je materiál.
+- Rychlost: 50–80 mm/s, první vrstva pomaleji
+
+Po tisku vybarvi tři drážky na pravém hřebeni vínovou barvou
+(akryl nebo fix na PLA). Otvor oka nech černý, nebo ho vybarvi zevnitř.
+
+Barevný soubor maska-hollow.3mf nenačítej do sliceru jako jednu barvu.
+Červené těleso by drážky zalilo a pruhy by zmizely. Když slicer umí
+dvě barvy a výměnu po objektech, můžeš v tom souboru nechat obě tělesa
+a bílé pojmenované „Maska bila“ dát na bílou PLA a „Pruhy cervene“
+na vínovou. U jedné trysky to znamená výměnu filamentu na hodně vrstvách.
+
+Na zeď
+------
+Reliéf má rovná záda. Přilepí se oboustrannou páskou nebo lepidlem.
+V modelu není dírka na hřebík — hřeben nahoře je tenký a otvor by ho
+přesekl.
