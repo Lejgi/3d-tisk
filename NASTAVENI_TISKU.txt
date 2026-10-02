@@ -1,56 +1,42 @@
 Držák na medaile — Matěj, Kuba, Filip
-Tisk na Creality Ender 3 V3 SE, tryska 0,4 mm, PLA Basic
+Černá deska a háčky, bílé jméno a bílé dílky míče
+Jeden tisk, výměna filamentu za pochodu
+Creality Ender 3 V3 SE, tryska 0,4 mm, PLA
 
 SOUBORY
   modely/drzak-medaile-Matej.3mf
   modely/drzak-medaile-Kuba.3mf
   modely/drzak-medaile-Filip.3mf
 
-Tři držáky jsou stejné. Mění se jen vystouplé jméno.
-Na každém je fotbalový míč, jméno a 7 háčků na stuhy medailí.
-Další jméno se dá doplnit do seznamu NAMES ve skriptu generate_drzak.py.
+VÝMĚNA FILAMENTU
+  Model leží rovnou zadní stranou na podložce. Neotáčet, podpěry vypnout.
+  Do výšky 6,0 mm tisknout černou PLA.
+  Od výšky 6,0 mm tisknout bílou PLA.
+  Při výšce vrstvy 0,20 mm je to začátek 31. vrstvy.
+  Ve sliceru v náhledu vrstev přidat na tuto výšku „Filament change“
+  nebo „Change filament“. Do té vrstvy černá, od ní bílá.
+  Nad 6,0 mm už jsou jen písmena a dílky míče, nic jiného.
 
 ROZMĚRY
-  Deska 200 × 180 × 6 mm
-  Háčky vystupují do výšky 23,4 mm
-  Vejde se na podložku 220 × 220 mm (vůle 10 mm na každé straně do šířky)
+  200 × 202 × 7,6 mm
+  Na podložku 220 × 220 mm se vejde. Brim dejte jen 3 mm.
 
-JAK TO POLOŽIT NA PODLOŽKU
-  Rovná zadní strana dolů, háčky nahoru.
-  Model už tak v souboru leží. V sliceru ho neotáčejte.
-  Podpěry: vypnout. Převisy na háčcích jsou strmější než 45°.
-
-MATERIÁL PLA BASIC (1,75 mm)
-  Tryska          205 °C   (první vrstva 210 °C)
-                  rozsah materiálu je 190–220 °C, přes 220 °C nechoďte
+MATERIÁL PLA (1,75 mm), obě barvy stejné nastavení
+  Tryska          205 °C, první vrstva 210 °C
+                  rozsah 190–220 °C
   Podložka        60 °C
-                  rozsah materiálu je 45–60 °C, u desky 200 mm držte 60 °C
-  Rychlost        vnější stěny 50 mm/s
-                  vnitřní stěny 60 mm/s
-                  výplň 80–100 mm/s
-                  doporučené pásmo materiálu je 50–100 mm/s
-                  na nápis nepoužívejte 150 mm/s, písmena se rozmažou
+  Rychlost        vnější stěny 50 mm/s, výplň 80–100 mm/s
   Výška vrstvy    0,20 mm
   Šířka čáry      0,42 mm
   Stěny           4
   Plné vrstvy     5 dole a 5 nahoře
   Výplň           20 % gyroid
   Chlazení        100 % od 4. vrstvy
-  Brim            5 mm, ať se nezvednou rohy
 
-Volitelně dvě barvy bez AMS: v Creality Print / Cura vyměňte filament
-ve výšce 6,0 mm (vrstva 30 při výšce vrstvy 0,20 mm).
-Deska zůstane v první barvě, jméno, míč, rámeček a háčky ve druhé.
-
-PŘIVRUTOVÁNÍ NA ZEĎ
-  4× zápustný vrut 4×40 mm (hlava asi 8–8,5 mm)
-  4× hmoždinka 6 mm
-  Otvory v desce jsou Ø 5,8 mm, zápust Ø 11 mm, hlava zapadne pod povrch.
+HÁČKY A ZEĎ
+  Háčky jsou na spodní hraně, v černé části.
+  Stuhu navlékněte přes širší konec zdola, sedne do užšího krčku.
+  Háčků je 7.
+  4× zápustný vrut 4×40 mm a hmoždinka 6 mm.
   Rozteč středů otvorů: 152 mm vodorovně, 132 mm svisle.
-  Desku lze přiložit na zeď a otvory obkreslit.
-  Vruty jen dotáhněte, PLA nechce přetažený šroub.
-
-MEDAILE
-  Stuhu navlékněte přes hlavu háčku. Dřík je Ø 7 mm, hlava Ø 11,4 mm.
-  Háčků je 7, rozteč 24 mm. Vedle sebe se vejdou běžné stuhy,
-  medaile pak visí pod deskou.
+  Vruty jen dotáhnout.
