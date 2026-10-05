@@ -19,31 +19,39 @@ PROČ SE TO NEROZPADNE A PŘITOM TO CHODÍ
   Na konci každého zářezu je kulatá dírka, ať věnec nepraskne.
 
 JAK TO VYPADÁ
-  Černé tělo, červený hřbet, rohy, oči a ocasní vějíř — jako na předloze.
-  Každý článek má hřeben se třemi trny sklopenými k ocasu.
-  Ocas končí brkem, na kterém je pět červených listů.
-  Rohy a oči jsou samostatné červené díly.
-  Na břiše článku je číslo. 01 je u hlavy, vyšší číslo pokračuje k ocasu.
-  Větší kolík na článku je směrem k hlavě. Hřeben na něj pasuje jen jedním směrem,
-  trny se kloní k ocasu.
+  Jeden drak: černé tělo, červený hřbet, rohy, oči a ocasní vějíř.
+  Trny, rohy, oči i listy vějíře jsou s tělem srostlé. Nic se na to nelepí
+  a nejsou na to kolíky.
+  Na náhledu je hřbet červený. Tiskárna má jednu trysku, takže z ní vyleze
+  jedna barva. Červené plochy pak natři, nebo ve sliceru vyměň filament
+  ve výšce, kde končí pancíř a začínají trny.
+  Na boku článku je číslo. 01 je u hlavy.
+
+PROČ TO NENÍ JEDEN TISK
+  Drak měří 75 cm, podložka Enderu 22×22 cm. Najednou se to nevejde.
+  Každý soubor je jeden už spojený kus páteře: články jsou v sobě natištěné
+  a po ulomení patek se hýbou. Kusy do sebe zacvakneš stejnou koulí.
+  Nohy jsou zvlášť, zacvaknou se do boku.
 
 SOUBORY
-  modely/drak-telo-1.3mf  (28 článku)
-  modely/drak-hlava-nohy-1.3mf  (hlava, nohy, vějíř)
-  modely/drak-cervena-1.3mf  (červené díly, 55 ks)
+  modely/drak-kus-1.3mf  (spojený kus, 4 článků)
+  modely/drak-kus-2.3mf  (spojený kus, 9 článků)
+  modely/drak-kus-3.3mf  (spojený kus, 9 článků)
+  modely/drak-kus-4.3mf  (spojený kus, 8 článků)
+  modely/drak-nohy-1.3mf  (nohy, 12 dílů)
 
 JAK TO POLOŽIT
-  Díly už leží tak, jak se mají tisknout. V sliceru je neotáčej.
-  Články leží břichem na podložce, trny se tisknou zvlášť špičkou nahoru.
+  Díly už leží tak, jak se mají tisknout. V sliceru je neotáčej a nerozděluj.
+  V jednom souboru je víc těles schválně: jsou to články už nasazené v sobě.
   Podpěry: vypnout.
-  U každé koule je žebrovaná patka. Ta patka je jen na tisk.
-  Než článek nasadíš, patku ulom. Je proříznutá, jde rukou, zbytek případně
-  štípni kleštěmi. Patka do objímky nepatří.
+  Pod koulí, která je uvnitř objímky, je tenká patka. Ta patka je jen na tisk.
+  Po vytištění každý kloub párkrát ohněte, patka se ulomí a článek se rozhýbe.
+  První koule každého kusu (ta, co ještě v ničem nesedí) má širší patku.
+  Tu ulom dřív, než kus zacvakneš do předchozího.
   Otřep na plochém spodku koule nevadí, ta plocha do stěny objímky nedosáhne.
 
 MATERIÁL
-  Černé desky: PLA černá. Červená deska: PLA červená.
-  Dvě barvy v jednom tisku nejsou potřeba, díly se nasadí na kolíky.
+  PLA, jedna barva na celý kus. Náhled ukazuje, co natřít na červeno.
 
   Tryska          205 °C (první vrstva 210 °C)
   Podložka        60 °C
@@ -59,25 +67,21 @@ MATERIÁL
                   na číslech a zářezech nezrychluj
   Chlazení        100 % od 4. vrstvy
   Podpěry         vypnout
-  Brim            články nepotřebují
-                  červená deska, rohy a vějíř: brim 4 mm
+  Brim            4 mm, ať se dlouhý kus na podložce nezkroutí
 
 SKLÁDÁNÍ
-  1. Ulom patky pod koulemi.
-  2. Článek 01 zatlač koulí do krku hlavy. Další článek do objímky předchozího.
-     Tlač rovně v ose, ne do boku. Má to jít ztuha. Když věnec bělá, přestaň
-     a zkus to znovu rovně — nechce to křivé páčení.
-  3. Ocasní vějíř nasuň do posledního článku.
-  4. Stehna nasuň do ramenního a kyčelního článku (mají otvor na boku).
+  1. V každém kusu ohněte klouby, ať odpadne tenká patka uvnitř objímky.
+     Širší patku na volné kouli ulomte kleštěmi.
+  2. Volnou kouli dalšího kusu zatlačte do objímky předchozího.
+     Tlačte rovně v ose. Má to jít ztuha. Když věnec bělá, přestaňte
+     a zkuste to znovu rovně.
+  3. Stehna nasuňte do ramenního a kyčelního článku (mají otvor na boku).
      Holeň do stehna, tlapku do holeně. Drápy míří dopředu.
-  5. Hřeben se stejným číslem nacvakni na kolíky článku. Větší dírka patří
-     na větší kolík (směr k hlavě).
-  6. Rohy a lícní trny nasuň na kolíky hlavy. Oči vtlač do důlků.
-  7. Červené listy ocasu nasuň na kolíky vějíře.
+  4. Čísla na bocích jdou od 01 u hlavy k ocasu.
 
 KDYŽ TO NEJDE NASADIT
-  Díra po tisku bývá o chlup menší. Stačí pár tahů pilníkem na kolíku
-  nebo na kouli, neubírej věnec objímky. Když ubereš věnec, článek začne vypadávat.
+  Díra po tisku bývá o chlup menší. Stačí pár tahů pilníkem na kouli,
+  neubírejte věnec objímky. Když uberete věnec, článek začne vypadávat.
 
 POKLÁDÁNÍ
   Drž trup a ohni ho do strany nebo nahoru. Neškubej jeden článek od druhého.

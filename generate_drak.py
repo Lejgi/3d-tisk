@@ -4,7 +4,8 @@
 Koule sedí v objímce až za rovníkem. Při ohýbání proto nevypadne,
 uvnitř je ale vůle, takže se článek pořád točí. Tiskne se na břicho
 na Ender 3 V3 SE (220×220×250), tryska 0,4 mm, PLA.
-Černé tělo a červené hřebeny, rohy a oči jsou samostatné díly.
+Trny, rohy i vějíř jsou součást těla, nic se na to nelepí.
+Na podložku 220 mm se 75 cm nevejde, proto se tiskne po spojených kusech.
 """
 
 from __future__ import annotations
@@ -52,6 +53,9 @@ SLIT_W = 1.22
 SLIT_N = 4
 # Ořez koule zespodu, ať spodní vrchlík neleží ve vzduchu.
 CUT_DEG = 52.0
+# Úzká patka, která při tisku spojeného kusu projde dnem objímky a po tisku se ulomí.
+SPRUE_R = 2.85
+HOLE_R = 3.60
 
 
 @dataclass
@@ -462,26 +466,95 @@ def collar_void(joint: Joint, x_center: float) -> trimesh.Trimesh:
     return cut(slab, [keep], "límec")
 
 
+def dragon_ring(x, width, height, keel) -> np.ndarray:
+    """Pancíř: ploché břicho, kulaté boky, hřbet s kýlem."""
+    n = 36
+    hw = width * 0.5
+    pts = []
+    for i in range(n):
+        t = 2 * math.pi * i / n
+        s = math.sin(t)
+        c = math.cos(t)  # +1 nahoře, -1 na břiše
+        belly = max(0.0, -c)
+        y = s * hw * (1.0 - 0.22 * belly)
+        if c > -0.05:
+            u = (c + 0.05) / 1.05
+            z = height * (0.16 + 0.84 * max(u, 0.0) ** 0.9)
+            z += keel * max(c, 0.0) ** 1.7
+        else:
+            z = 0.0
+        pts.append([x, y, z])
+    return np.array(pts)
+
+
 def armor_loft(x0, x1, width, height, keel, axis_z) -> trimesh.Trimesh:
     """Konce jsou úzký krček kolem osy kloubu, prostředek leží na podložce."""
-    ts = [0.0, 0.16, 0.38, 0.62, 0.84, 1.0]
-    scales = [0.46, 0.72, 1.0, 1.0, 0.74, 0.46]
-    raw = []
+    ts = [0.0, 0.10, 0.24, 0.42, 0.62, 0.82, 1.0]
+    scales = [0.40, 0.62, 0.88, 1.0, 1.02, 0.78, 0.42]
+    rings = []
     for t, s in zip(ts, scales):
         x = x0 + (x1 - x0) * t
-        h = height * (0.55 + 0.45 * s)
-        lift = 0.0 if s > 0.8 else max(0.0, axis_z - h * 0.55)
-        ring = rounded_rect_ring(
-            x,
-            max(10.0, width * s),
-            h,
-            radius=min(2.6, width * s * 0.16),
-            keel=keel * s,
-        )
+        h = height * (0.58 + 0.42 * s)
+        lift = 0.0 if s > 0.85 else max(0.0, axis_z - h * 0.62)
+        ring = dragon_ring(x, max(11.0, width * s), h, keel * s)
         ring[:, 2] += lift
-        raw.append(ring)
-    rings = [resample_ring(r, 40) for r in raw]
+        rings.append(ring)
     return loft_solid(rings)
+
+
+def scythe(length, width, thick, lean_deg, z0, x0=0.0, y0=0.0, curl=0.16, yaw_deg=0.0) -> trimesh.Trimesh:
+    """Zahnutý trn. Patka je zanořená do pancíře, ostří míří dozadu."""
+    n = 9
+    rings = []
+    yaw = math.radians(yaw_deg)
+    for i in range(n):
+        t = i / (n - 1)
+        ang = math.radians(lean_deg) * (0.82 + 0.18 * t)
+        dist = length * t
+        back = dist * math.sin(ang) + curl * length * t * t
+        up = dist * math.cos(ang)
+        center = np.array(
+            [x0 + back * math.cos(yaw), y0 + back * math.sin(yaw), z0 + up],
+            dtype=float,
+        )
+        heading = np.array(
+            [math.sin(ang) * math.cos(yaw), math.sin(ang) * math.sin(yaw), math.cos(ang)],
+            dtype=float,
+        )
+        side = np.array([-math.sin(yaw), math.cos(yaw), 0.0])
+        upv = np.cross(heading, side)
+        norm = np.linalg.norm(upv)
+        if norm < 1e-8:
+            upv = np.array([0.0, 0.0, 1.0])
+        else:
+            upv = upv / norm
+        w = width * (1 - t) ** 0.72 + 0.9
+        th = thick * (1 - t) ** 0.75 + 0.7
+        # šířka je ve směru ostří (z boku viditelná), tloušťka je do stran
+        ring = [
+            center - side * (th * 0.5) - upv * (w * 0.42),
+            center + side * (th * 0.45) - upv * (w * 0.05) + heading * (th * 0.35),
+            center + side * (th * 0.5) + upv * (w * 0.48),
+            center - side * (th * 0.4) + upv * (w * 0.12),
+        ]
+        rings.append(np.array(ring))
+    return loft_solid(rings)
+
+
+def sprue_mesh(joint: Joint) -> trimesh.Trimesh:
+    """Tenká patka pod koulí. Projde dírou v objímce a po tisku se ulomí."""
+    plane = ball_plane(joint)
+    return cyl_z(SPRUE_R, 0.0, plane + 0.12, sections=24)
+
+
+def socket_sprue_hole(joint: Joint, x_center: float) -> trimesh.Trimesh:
+    return cyl_z(HOLE_R, -0.4, joint.axis_z - 1.85, sections=28, center=(x_center, 0.0))
+
+
+def neck_rib(joint: Joint, x0: float, x1: float) -> trimesh.Trimesh:
+    """Žebro pod krčkem. Drží ho při tisku a pak se ulomí spolu s patkou."""
+    ztop = joint.axis_z * 0.92
+    return box((x0 + x1) * 0.5, 0.0, ztop * 0.5, max(1.2, x1 - x0), 1.8, ztop)
 
 
 def square_peg(x, y, z0, height, size_bot, size_top) -> trimesh.Trimesh:
@@ -554,8 +627,10 @@ def peg_pair(x_mid, z_top, joint_scale=1.0) -> list[trimesh.Trimesh]:
     ]
 
 
-def make_segment(pitch, width, height, keel, index, sides: tuple[bool, bool], joint: Joint):
-    """Článek páteře. Koule v x=0, objímka v x=pitch. Číslo je na břiše."""
+def make_segment(
+    pitch, width, height, keel, index, sides: tuple[bool, bool], joint: Joint, spine_len=0.0
+):
+    """Článek páteře. Koule v x=0, objímka v x=pitch. Trny jsou součást těla."""
     x_body0 = 6.9
     x_body1 = pitch - 6.0
     if x_body1 - x_body0 < 2.4:
@@ -564,19 +639,25 @@ def make_segment(pitch, width, height, keel, index, sides: tuple[bool, bool], jo
     ball = ball_mesh(joint)
     stem = stem_mesh(joint, 1.6, x_body0 + 0.8)
     house = housing_solid(joint, pitch)
-    # Kolíky začínají uvnitř pancíře, ať jejich spodek nezůstane viset.
-    crown = height + keel
-    pegs = [
-        square_peg((x_body0 + x_body1) * 0.5 - 3.6, 0.0, crown - 5.5, 10.2, 2.72, 1.9),
-        square_peg((x_body0 + x_body1) * 0.5 + 3.6, 0.0, crown - 5.5, 10.2, 2.18, 1.5),
-    ]
-    positives = [body, ball, stem, house, *pegs]
+    positives = [body, ball, stem, house]
+    reds: list[trimesh.Trimesh] = []
+    if spine_len > 8.0:
+        mid = x_body0 + (x_body1 - x_body0) * 0.58
+        z_root = height * 0.62
+        reds.append(scythe(spine_len, max(8.0, width * 0.38), 2.8, 36.0, z_root, mid, 0.0, 0.12, 0.0))
+        reds.append(
+            scythe(spine_len * 0.55, max(6.0, width * 0.22), 2.2, 40.0, height * 0.42, mid - 0.6, 0.0, 0.06, 50.0)
+        )
+        reds.append(
+            scythe(spine_len * 0.55, max(6.0, width * 0.22), 2.2, 40.0, height * 0.42, mid - 0.6, 0.0, 0.06, -50.0)
+        )
     voids = transform_voids(
         socket_voids(joint),
         socket_matrix((pitch, 0.0, joint.axis_z), (1, 0, 0)),
     )
     voids.append(face_cutter(joint, pitch))
     voids.append(collar_void(joint, pitch))
+    voids.append(socket_sprue_hole(joint, pitch))
     # boční objímky nohou
     limb = LIMB
     # boční kloub má vlastní výšku osy shodnou s páteří, ať noha sedí uprostřed
@@ -617,9 +698,31 @@ def make_segment(pitch, width, height, keel, index, sides: tuple[bool, bool], jo
         digit_boxes(label, (x_body0 + x_body1) * 0.5 - 2.2, -width * 0.5 + 0.15, height * 0.48)
     )
     functional = cut(unite(positives, f"článek {index}"), voids, f"otvory {index}")
-    support = print_support(joint, x_body0 + 1.2, pitch)
-    printable = unite([functional, support], f"tisk {index}")
-    return printable, functional
+    support = segment_support(joint, x_body0, pitch, narrow=False)
+    parts = [functional, support, *reds]
+    printable = unite(parts, f"tisk {index}")
+    return printable, functional, reds
+
+
+def segment_support(joint: Joint, x_body0: float, pitch: float, narrow: bool, rear: bool = True) -> trimesh.Trimesh:
+    """Patka pod koulí. Zadní žebro jen když v objímce při tomto tisku nic nesedí."""
+    parts = []
+    z_top = joint.axis_z + 0.4
+    if narrow:
+        parts.append(sprue_mesh(joint))
+    else:
+        plane = ball_plane(joint)
+        flat_r = joint.ball_r * math.sin(math.radians(joint.cut_deg)) + 0.25
+        parts.append(cyl_z(flat_r, 0.0, plane + 0.15, sections=32))
+        parts.append(box(x_body0 * 0.42, 0.0, z_top * 0.5, max(4.0, x_body0 * 0.75), 8.0, z_top))
+    rib_end = min(x_body0 + 3.2, pitch - 7.5)
+    if rib_end > 7.4:
+        parts.append(neck_rib(joint, 7.2, rib_end))
+    if rear:
+        x0 = max(x_body0 + 1.5, pitch - 6.2)
+        if pitch - x0 > 1.5:
+            parts.append(box((x0 + pitch) * 0.5, 0.0, z_top * 0.5, pitch - x0, 9.0, z_top))
+    return unite(parts, "patka")
 
 
 def blade(length, base_w, base_t, lean_deg, sweep_deg=0.0, z0=0.0) -> trimesh.Trimesh:
@@ -735,109 +838,52 @@ def orient_axis_up(mesh: trimesh.Trimesh, direction) -> trimesh.Trimesh:
 
 
 def head_mesh(joint: Joint):
-    """Hlava. Objímka krku je v počátku a otevírá se k ocasu (+X)."""
+    """Hlava v jednom kuse. Rohy a oči jsou s ní srostlé, na náhledu jsou červené."""
     stations = [
-        (-106, 7.0, 8.0, 0.8),
-        (-92, 12.0, 11.0, 1.4),
-        (-78, 16.5, 13.5, 2.2),
-        (-62, 26.0, 18.0, 3.2),
-        (-48, 38.0, 28.0, 5.0),
-        (-34, 44.0, 36.0, 6.2),
-        (-20, 34.0, 28.0, 4.4),
-        (-8, 24.0, 20.0, 2.4),
+        (-124, 7.5, 8.5, 0.4),
+        (-110, 12.0, 11.0, 0.9),
+        (-94, 17.0, 15.0, 1.4),
+        (-78, 28.0, 20.0, 2.2),
+        (-62, 42.0, 30.0, 3.6),
+        (-46, 52.0, 44.0, 6.4),
+        (-32, 46.0, 38.0, 4.6),
+        (-18, 30.0, 26.0, 2.6),
+        (-6, 18.0, 20.0, 1.3),
     ]
-    raw = [
-        rounded_rect_ring(x, w, h, min(3.4, w * 0.16), k)
-        for x, w, h, k in stations
-    ]
-    rings = [resample_ring(r, 42) for r in raw]
+    rings = [resample_ring(dragon_ring(x, w, h, k), 40) for x, w, h, k in stations]
     skull = loft_solid(rings)
-    # nadočnicový val — leží na lebce, nepřečnívá dopředu do vzduchu
-    brow = scale_about(sphere(10.5, (-40, 0, 30), subdiv=2), (1.5, 1.15, 0.55), (-40, 0, 30))
-    jaw = scale_about(sphere(9.0, (-62, 0, 6.5), subdiv=2), (2.3, 1.15, 0.7), (-62, 0, 6.5))
+    brow = scale_about(sphere(11.0, (-42, 0, 32), subdiv=2), (1.45, 1.2, 0.5), (-42, 0, 32))
+    jaw = scale_about(sphere(8.5, (-70, 0, 6.2), subdiv=2), (2.4, 1.2, 0.72), (-70, 0, 6.2))
     house = housing_solid(joint, 0.0)
-    # kolíky rohů, 37° od svislice, pořád tisknutelné
-    pegs = []
-    peg_specs = []
-
-    def add_peg(name, origin, back_deg, out_deg, length, peg, base_r, tip_r):
-        d = np.array(
-            [
-                math.sin(math.radians(back_deg)) * math.cos(math.radians(out_deg)),
-                math.sin(math.radians(out_deg)),
-                math.cos(math.radians(back_deg)) * math.cos(math.radians(out_deg)),
-            ]
-        )
-        d = d / np.linalg.norm(d)
-        origin = np.asarray(origin, float)
-        # kolík zanořený 1.6 mm do hlavy
-        p0 = origin - d * 1.6
-        p1 = origin + d * 5.6
-        rod = cyl_between(p0, p1, peg * 0.48)
-        # hranolový kolík
-        rod = square_along(p0, p1, peg)
-        pegs.append(rod)
-        peg_specs.append((name, origin, d, length, base_r, tip_r, peg))
-
-    add_peg("roh-l", (-34, 11.5, 31.5), 34, 18, 50, 3.35, 5.4, 1.05)
-    add_peg("roh-p", (-34, -11.5, 31.5), 34, -18, 50, 3.35, 5.4, 1.05)
-    add_peg("roh2-l", (-24, 6.5, 34.0), 28, 10, 32, 2.85, 3.9, 0.85)
-    add_peg("roh2-p", (-24, -6.5, 34.0), 28, -10, 32, 2.85, 3.9, 0.85)
-    add_peg("nos", (-78, 0.0, 16.5), 22, 0, 18, 2.45, 2.9, 0.7)
-    # krční trny a lícní hroty mají svislé kolíky
-    spine_pegs = [
-        ("tnovy-1", -18, 0.0, 26.5, 2.5),
-        ("tnovy-2", -12, 0.0, 22.5, 2.3),
-        ("tnovy-3", -8, 0.0, 19.5, 2.15),
-        ("lic-l", -48, 16.0, 16.0, 2.2),
-        ("lic-p", -48, -16.0, 16.0, 2.2),
-        ("lic2-l", -38, 18.0, 20.0, 2.2),
-        ("lic2-p", -38, -18.0, 20.0, 2.2),
+    horns = [
+        scythe(62, 10.0, 4.6, 28, 34.0, -40, 12.0, 0.22, 16),
+        scythe(62, 10.0, 4.6, 28, 34.0, -40, -12.0, 0.22, -16),
+        scythe(40, 7.0, 3.6, 24, 38.0, -30, 6.0, 0.16, 7),
+        scythe(40, 7.0, 3.6, 24, 38.0, -30, -6.0, 0.16, -7),
+        scythe(20, 4.2, 2.4, 32, 10.0, -102, 0.0, 0.06, 180),
+        scythe(24, 6.5, 2.6, 32, 28.0, -20, 0.0, 0.12, 0),
+        scythe(18, 5.0, 2.2, 34, 22.0, -10, 0.0, 0.10, 0),
+        scythe(16, 5.2, 2.2, 42, 16.0, -58, 12.0, 0.06, 64),
+        scythe(16, 5.2, 2.2, 42, 16.0, -58, -12.0, 0.06, -64),
     ]
-    extra_pegs = []
-    for name, x, y, z, size in spine_pegs:
-        extra_pegs.append(square_peg(x, y, z - 1.2, 4.8, size, size * 0.7))
-        peg_specs.append((name, np.array([x, y, z]), np.array([0, 0, 1.0]), 0, 0, 0, size))
-
-    # oči: důlek a svislý kolík
-    eye_centers = [(-58, 14.5, 16.5), (-58, -14.5, 16.5)]
-    eye_voids = []
-    for ex, ey, ez in eye_centers:
-        eye_voids.append(sphere(3.3, (ex, ey, ez), subdiv=2))
-        extra_pegs.append(square_peg(ex, ey * 0.92, ez - 1.0, 4.2, 2.15, 1.55))
-
+    eye_centers = [(-62, 15.5, 18.0), (-62, -15.5, 18.0)]
+    eyes = [sphere(3.45, c, subdiv=3) for c in eye_centers]
     voids = transform_voids(socket_voids(joint), socket_matrix((0, 0, joint.axis_z), (1, 0, 0)))
     voids.append(face_cutter(joint, 0.0))
     voids.append(collar_void(joint, 0.0))
-    # tlama — mělká drážka z boku, ať střecha nepřemosťuje celou šířku
+    voids.append(socket_sprue_hole(joint, 0.0))
     for s in (1.0, -1.0):
-        voids.append(box(-78, s * 12.5, 8.2, 34, 8.0, 2.6))
-    # nozdry
-    voids.append(sphere(1.5, (-98, 2.4, 8.5), subdiv=2))
-    voids.append(sphere(1.5, (-98, -2.4, 8.5), subdiv=2))
-    voids.extend(eye_voids)
-    # zuby na horní hraně dolní čelisti, směrem nahoru
-    teeth = []
-    for i, x in enumerate(np.linspace(-96, -64, 6)):
-        teeth.append(tooth(x, 0.0, 10.2))
-    solid = unite([skull, brow, jaw, house, *pegs, *extra_pegs, *teeth], "hlava")
-    # oholit všechno pod podložkou
-    solid = cut(solid, [box(0, 0, -15, 260, 120, 30)], "podložka hlavy")
+        voids.append(box(-86, s * 13.5, 9.0, 36, 8.0, 2.4))
+    voids.append(sphere(1.6, (-108, 2.6, 8.0), subdiv=2))
+    voids.append(sphere(1.6, (-108, -2.6, 8.0), subdiv=2))
+    for c in eye_centers:
+        voids.append(sphere(2.5, c, subdiv=2))
+    teeth = [tooth(x, 0.0, 10.4) for x in np.linspace(-108, -72, 7)]
+    solid = unite([skull, brow, jaw, house, *teeth], "hlava")
+    solid = cut(solid, [box(0, 0, -15, 280, 140, 30)], "podložka hlavy")
     functional = cut(solid, voids, "hlava otvory")
-    dress = []
-    for spec in peg_specs:
-        name, origin, direction, length, base_r, tip_r, peg = spec
-        if length <= 0:
-            piece = small_crest(peg)
-            piece.apply_translation((origin[0], origin[1], origin[2] - 1.0))
-        else:
-            piece = map_z_to_dir(horn(length, base_r, tip_r, peg, name), direction, origin)
-        dress.append(piece)
-    for ex, ey, ez in eye_centers:
-        eye = eye_mesh()
-        eye.apply_translation((ex, ey, ez - 1.2))
-        dress.append(eye)
-    return functional, peg_specs, eye_centers, dress
+    dress = [(h, RED) for h in horns] + [(e, EYE) for e in eyes]
+    return functional, dress
 
 
 def cyl_between(p0, p1, radius, sections=20) -> trimesh.Trimesh:
@@ -933,7 +979,9 @@ def limb_segment(pitch, width, height, index, joint: Joint, peg=True):
     house = housing_solid(j, pitch)
     positives = [body, ball, stem, house]
     if peg:
-        positives.append(square_peg((x0 + x1) / 2, 0, height * 0.82, 4.4, 2.3, 1.6))
+        positives.append(
+            scythe(max(10.0, height * 0.85), 4.4, 1.9, 34.0, height * 0.55, (x0 + x1) * 0.55, curl=0.12)
+        )
     voids = transform_voids(socket_voids(j), socket_matrix((pitch, 0, j.axis_z), (1, 0, 0)))
     voids.append(face_cutter(j, pitch))
     voids.append(collar_void(j, pitch))
@@ -999,46 +1047,26 @@ def claw(length, yaw, pitch, base_z=6.0) -> trimesh.Trimesh:
     return loft_solid(rings)
 
 
-def make_fin(joint: Joint, keel_len=48.0):
-    """Vějíř: černé brko na podložce a červené listy na šikmých kolících.
-
-    Vrací tiskovou síť, funkční brko, listy v souřadnicích brka a listy pro tisk.
-    """
+def make_fin(joint: Joint, keel_len=52.0):
+    """Vějíř v jednom kuse. Listy vyrůstají z brka, na náhledu jsou červené."""
     ball = ball_mesh(joint)
     stem = stem_mesh(joint, 1.5, 7.2)
     keel = fin_keel(keel_len)
-    pegs = []
-    mounted = []
-    prints = []
-    # x, vytočení do strany, záklon kolíku od svislice, délka listu
-    layout = (
-        (16.0, -24.0, 32.0, 46.0),
-        (24.0, -12.0, 28.0, 54.0),
-        (33.0, 0.0, 26.0, 62.0),
-        (26.0, 13.0, 28.0, 52.0),
-        (18.0, 25.0, 32.0, 44.0),
-    )
-    for x, yaw, lean, leaf_len in layout:
-        d = np.array(
-            [
-                math.sin(math.radians(lean)) * math.cos(math.radians(yaw)),
-                math.sin(math.radians(lean)) * math.sin(math.radians(yaw)),
-                math.cos(math.radians(lean)),
-            ]
-        )
-        d = d / np.linalg.norm(d)
-        origin = np.array([x, math.sin(math.radians(yaw)) * 1.1, 11.2])
-        pegs.append(square_along(origin - d * 2.4, origin + d * 5.4, 2.16))
-        mounted.append(mounted_leaf(origin, d, leaf_len))
-        leaf_print = red_fin_leaf(8.4, leaf_len)
-        lfrac, _ = overhang_fraction(leaf_print, zmin=8.0)
-        if lfrac > 0.025:
-            raise RuntimeError(f"list vějíře má převis {lfrac:.3f}")
-        prints.append(leaf_print)
-    solid = unite([ball, stem, keel, *pegs], "ocasní vějíř")
-    support = print_support(joint, 8.0, 12.0)
-    printable = unite([solid, support], "tisk vějíře")
-    return printable, solid, mounted, prints
+    black = unite([ball, stem, keel], "brko")
+    blades = []
+    for x, yaw, lean, length in (
+        (14.0, -30.0, 34.0, 48.0),
+        (22.0, -15.0, 32.0, 56.0),
+        (32.0, 0.0, 30.0, 64.0),
+        (24.0, 15.0, 32.0, 54.0),
+        (16.0, 30.0, 34.0, 46.0),
+    ):
+        t = min(1.0, max(0.0, (x - 5.0) / keel_len))
+        h = 18.0 * (1.0 - t) + 8.0 * t
+        blades.append(scythe(length, 7.6, 2.6, lean, max(6.0, h * 0.72), x, 0.0, 0.08, yaw))
+    solid = unite([black, *blades], "vějíř")
+    printable = unite([solid, print_support(joint, 8.0, 12.0)], "tisk vějíře")
+    return printable, black, blades
 
 
 def fin_keel(length) -> trimesh.Trimesh:
@@ -1412,8 +1440,8 @@ def section_plot(mesh: trimesh.Trimesh, origin, normal, path: Path, title: str):
 def joint_self_test(joint: Joint) -> dict:
     """Dva články proti sobě. Ověří vůli, ohnutí a to, že koule neprojde ven."""
     pitch = 18.0
-    print_a, func_a = make_segment(pitch, 28, 17.5, 3.2, 1, (False, False), joint)
-    _, func_b = make_segment(pitch, 28, 17.5, 3.2, 2, (False, False), joint)
+    print_a, func_a, _ = make_segment(pitch, 28, 17.5, 3.2, 1, (False, False), joint, spine_len=0.0)
+    _, func_b, _ = make_segment(pitch, 28, 17.5, 3.2, 2, (False, False), joint, spine_len=0.0)
     seat = np.eye(4)
     seat[:3, 3] = (pitch, 0, 0)
     seated = apply_copy(func_b, seat)
@@ -1476,12 +1504,12 @@ def build_all():
     print("Zkouším kloub…")
     stats = joint_self_test(SPINE)
     print("Modeluji hlavu…")
-    head, peg_specs, eye_centers, head_dress = head_mesh(SPINE)
+    head, head_dress = head_mesh(SPINE)
     head_len = -measure_tip(head, 0, "min")
     print(f"  hlava {head_len:.1f} mm, rozsah {head.extents.round(1)}")
 
     print("Modeluji vějíř…")
-    fin_print, fin_func, fin_leaves, fin_leaf_prints = make_fin(SPINE)
+    fin_print, fin_func, fin_leaves = make_fin(SPINE)
     fin_len = float(fin_func.bounds[1, 0])
     for leaf in fin_leaves:
         fin_len = max(fin_len, float(leaf.bounds[1, 0]))
@@ -1508,7 +1536,6 @@ def build_all():
     hip_i = 12
     segments = []
     printables = []
-    crests = []
     print("Modeluji články…")
     for i, pitch in enumerate(pitches):
         t = i / (len(pitches) - 1)
@@ -1519,30 +1546,22 @@ def build_all():
             width *= 0.84
             height *= 0.90
         sides = (i == shoulder_i or i == hip_i, i == shoulder_i or i == hip_i)
-        printable, functional = make_segment(
-            float(pitch), width, height, keel, i + 1, sides, SPINE
+        spine_len = (height + keel) * (1.35 if i >= 4 else 1.05)
+        printable, functional, reds = make_segment(
+            float(pitch), width, height, keel, i + 1, sides, SPINE, spine_len=spine_len
         )
         if not printable.is_watertight:
             raise RuntimeError(f"článek {i+1} není uzavřený")
         frac, _ = overhang_fraction(printable)
-        if frac > 0.015:
+        if frac > 0.02:
             raise RuntimeError(f"článek {i+1} má převis {frac:.3f}")
-        scale = 0.86 + 0.20 * (1 - t)
-        if i < 4:
-            scale *= 0.84
-        crest_mesh = crest(scale, f"{i+1:02d}")
-        # strop dírky na kolík je krátký můstek, do převisu se nepočítá
-        cfrac, _ = overhang_fraction(crest_mesh, zmin=7.5)
-        if cfrac > 0.02:
-            raise RuntimeError(f"hřeben {i+1} má převis {cfrac:.3f}")
-        crests.append((f"hreben-{i+1:02d}", crest_mesh))
         segments.append(
             {
                 "mesh": functional,
+                "reds": reds,
                 "pitch": float(pitch),
                 "width": width,
-                "crest": crest_mesh,
-                "x_mid": (6.9 + (pitch - 6.0)) * 0.5,
+                "x_body0": 6.9,
                 "crown": height + keel,
                 "hip_x": (6.9 + (pitch - 6.0)) * 0.48,
                 "sides": sides,
@@ -1555,7 +1574,7 @@ def build_all():
 
     print("Modeluji nohy…")
     legs = []
-    leg_crests = []
+    leg_crests = []  # trn je už součást nohy
     # přední a zadní, levá a pravá — stejný tvar, jen zrcadlený
     for place in ("predni", "zadni"):
         for side, mirror in (("L", False), ("P", True)):
@@ -1570,29 +1589,12 @@ def build_all():
                     raise RuntimeError(f"noha {place}-{side}-{part} má převis {frac:.3f}")
                 legs.append((f"noha-{place}-{side}-{part}", pr, fn, pitch))
                 chain.append((fn, pitch))
-                leg_crests.append((f"trn-{place}-{side}-{part}", small_crest(2.3)))
             foot, _ = make_foot(LIMB)
             if mirror:
                 foot = mirror_y(foot)
             foot_print = orient_toes_up(foot)
             legs.append((f"noha-{place}-{side}-tlapka", foot_print, foot, 0.0))
             chain.append((foot, 0.0))
-
-    print("Modeluji červené díly hlavy…")
-    reds = []
-    for spec in peg_specs:
-        name, origin, direction, length, base_r, tip_r, peg = spec
-        if length <= 0:
-            # svislý trn
-            reds.append((name, small_crest(peg)))
-        else:
-            h = horn(length, base_r, tip_r, peg, name)
-            reds.append((name, orient_axis_up(h, np.array([0, 0, 1.0]))))
-            # horn() je už podél +Z
-            reds[-1] = (name, lay_on_bed(h))
-    for k, _ in enumerate(eye_centers):
-        reds.append((f"oko-{'l' if k==0 else 'p'}", eye_mesh()))
-    leaves = [(f"list-{i+1}", leaf) for i, leaf in enumerate(fin_leaf_prints)]
 
     # sestava pro náhled
     print("Skládám náhled…")
@@ -1603,12 +1605,12 @@ def build_all():
     return {
         "stats": stats,
         "head": head,
+        "segments": segments,
         "printables": printables,
-        "crests": crests,
         "legs": legs,
-        "leg_crests": leg_crests,
-        "reds": reds,
-        "leaves": leaves,
+        "fin_leaves": fin_leaves,
+        "fin_func": fin_func,
+        "head_dress": head_dress,
         "fin_print": fin_print,
         "straight": straight,
         "posed": posed,
@@ -1652,16 +1654,15 @@ def assemble_preview(head, segments, fin_func, fin_leaves, legs, pitches, head_d
         frames = []
         T = np.eye(4)
         items.append((apply_copy(head, T), BLACK))
-        for piece in head_dress:
-            items.append((apply_copy(piece, T), RED))
+        for piece, color in head_dress:
+            items.append((apply_copy(piece, T), color))
         for seg, (yaw, pitch_deg) in zip(segments, angles):
             R = pose_yaw_pitch(yaw, pitch_deg, ball)
             T = T @ R
             frames.append(T.copy())
             items.append((apply_copy(seg["mesh"], T), BLACK))
-            crest_m = seg["crest"].copy()
-            crest_m.apply_translation((seg["x_mid"], 0.0, seg["crown"] - 4.2))
-            items.append((apply_copy(crest_m, T), RED))
+            for red in seg["reds"]:
+                items.append((apply_copy(red, T), RED))
             step = np.eye(4)
             step[0, 3] = seg["pitch"]
             T = T @ step
@@ -1753,29 +1754,35 @@ PROČ SE TO NEROZPADNE A PŘITOM TO CHODÍ
   Na konci každého zářezu je kulatá dírka, ať věnec nepraskne.
 
 JAK TO VYPADÁ
-  Černé tělo, červený hřbet, rohy, oči a ocasní vějíř — jako na předloze.
-  Každý článek má hřeben se třemi trny sklopenými k ocasu.
-  Ocas končí brkem, na kterém je pět červených listů.
-  Rohy a oči jsou samostatné červené díly.
-  Na břiše článku je číslo. 01 je u hlavy, vyšší číslo pokračuje k ocasu.
-  Větší kolík na článku je směrem k hlavě. Hřeben na něj pasuje jen jedním směrem,
-  trny se kloní k ocasu.
+  Jeden drak: černé tělo, červený hřbet, rohy, oči a ocasní vějíř.
+  Trny, rohy, oči i listy vějíře jsou s tělem srostlé. Nic se na to nelepí
+  a nejsou na to kolíky.
+  Na náhledu je hřbet červený. Tiskárna má jednu trysku, takže z ní vyleze
+  jedna barva. Červené plochy pak natři, nebo ve sliceru vyměň filament
+  ve výšce, kde končí pancíř a začínají trny.
+  Na boku článku je číslo. 01 je u hlavy.
+
+PROČ TO NENÍ JEDEN TISK
+  Drak měří 75 cm, podložka Enderu 22×22 cm. Najednou se to nevejde.
+  Každý soubor je jeden už spojený kus páteře: články jsou v sobě natištěné
+  a po ulomení patek se hýbou. Kusy do sebe zacvakneš stejnou koulí.
+  Nohy jsou zvlášť, zacvaknou se do boku.
 
 SOUBORY
 {chr(10).join('  ' + n for n in plate_names)}
 
 JAK TO POLOŽIT
-  Díly už leží tak, jak se mají tisknout. V sliceru je neotáčej.
-  Články leží břichem na podložce, trny se tisknou zvlášť špičkou nahoru.
+  Díly už leží tak, jak se mají tisknout. V sliceru je neotáčej a nerozděluj.
+  V jednom souboru je víc těles schválně: jsou to články už nasazené v sobě.
   Podpěry: vypnout.
-  U každé koule je žebrovaná patka. Ta patka je jen na tisk.
-  Než článek nasadíš, patku ulom. Je proříznutá, jde rukou, zbytek případně
-  štípni kleštěmi. Patka do objímky nepatří.
+  Pod koulí, která je uvnitř objímky, je tenká patka. Ta patka je jen na tisk.
+  Po vytištění každý kloub párkrát ohněte, patka se ulomí a článek se rozhýbe.
+  První koule každého kusu (ta, co ještě v ničem nesedí) má širší patku.
+  Tu ulom dřív, než kus zacvakneš do předchozího.
   Otřep na plochém spodku koule nevadí, ta plocha do stěny objímky nedosáhne.
 
 MATERIÁL
-  Černé desky: PLA černá. Červená deska: PLA červená.
-  Dvě barvy v jednom tisku nejsou potřeba, díly se nasadí na kolíky.
+  PLA, jedna barva na celý kus. Náhled ukazuje, co natřít na červeno.
 
   Tryska          205 °C (první vrstva 210 °C)
   Podložka        60 °C
@@ -1791,25 +1798,21 @@ MATERIÁL
                   na číslech a zářezech nezrychluj
   Chlazení        100 % od 4. vrstvy
   Podpěry         vypnout
-  Brim            články nepotřebují
-                  červená deska, rohy a vějíř: brim 4 mm
+  Brim            4 mm, ať se dlouhý kus na podložce nezkroutí
 
 SKLÁDÁNÍ
-  1. Ulom patky pod koulemi.
-  2. Článek 01 zatlač koulí do krku hlavy. Další článek do objímky předchozího.
-     Tlač rovně v ose, ne do boku. Má to jít ztuha. Když věnec bělá, přestaň
-     a zkus to znovu rovně — nechce to křivé páčení.
-  3. Ocasní vějíř nasuň do posledního článku.
-  4. Stehna nasuň do ramenního a kyčelního článku (mají otvor na boku).
+  1. V každém kusu ohněte klouby, ať odpadne tenká patka uvnitř objímky.
+     Širší patku na volné kouli ulomte kleštěmi.
+  2. Volnou kouli dalšího kusu zatlačte do objímky předchozího.
+     Tlačte rovně v ose. Má to jít ztuha. Když věnec bělá, přestaňte
+     a zkuste to znovu rovně.
+  3. Stehna nasuňte do ramenního a kyčelního článku (mají otvor na boku).
      Holeň do stehna, tlapku do holeně. Drápy míří dopředu.
-  5. Hřeben se stejným číslem nacvakni na kolíky článku. Větší dírka patří
-     na větší kolík (směr k hlavě).
-  6. Rohy a lícní trny nasuň na kolíky hlavy. Oči vtlač do důlků.
-  7. Červené listy ocasu nasuň na kolíky vějíře.
+  4. Čísla na bocích jdou od 01 u hlavy k ocasu.
 
 KDYŽ TO NEJDE NASADIT
-  Díra po tisku bývá o chlup menší. Stačí pár tahů pilníkem na kolíku
-  nebo na kouli, neubírej věnec objímky. Když ubereš věnec, článek začne vypadávat.
+  Díra po tisku bývá o chlup menší. Stačí pár tahů pilníkem na kouli,
+  neubírejte věnec objímky. Když uberete věnec, článek začne vypadávat.
 
 POKLÁDÁNÍ
   Drž trup a ohni ho do strany nebo nahoru. Neškubej jeden článek od druhého.
@@ -1826,49 +1829,121 @@ def main():
     if abs(info["length"] - TARGET_LEN) > 2.0:
         raise RuntimeError(f"délka {info['length']:.1f} není 750")
 
-    black_items = [(n, m, BLACK) for n, m in info["printables"]]
-    black_items.append(("hlava", info["head"], BLACK))
-    black_items.append(("vejir", info["fin_print"], BLACK))
-    for name, pr, _fn, _pitch in info["legs"]:
-        black_items.append((name, pr, BLACK))
+    for stale in (
+        "drak-telo-1.3mf",
+        "drak-hlava-nohy-1.3mf",
+        "drak-cervena-1.3mf",
+    ):
+        old = OUT_DIR / stale
+        if old.exists():
+            old.unlink()
 
-    red_items = [(n, m, RED) for n, m in info["crests"]]
-    red_items += [(n, m, RED) for n, m in info["leg_crests"]]
-    red_items += [(n, m, RED) for n, m in info["reds"] if not n.startswith("oko")]
-    red_items += [(n, m, EYE) for n, m in info["reds"] if n.startswith("oko")]
-    red_items += [(n, m, RED) for n, m in info["leaves"]]
-
-    print("Rozkládám na desky…")
-    # články zvlášť, ať je číslování pohromadě; hlava a nohy zvlášť; červená zvlášť
-    body_plates = pack_plates([(n, m, c) for n, m, c in black_items if n.startswith("clanek")])
-    other_black = [(n, m, c) for n, m, c in black_items if not n.startswith("clanek")]
-    other_plates = pack_plates(other_black)
-    red_plates = pack_plates(red_items)
+    print("Skládám spojené kusy na podložku…")
+    chain = [
+        {
+            "name": "hlava",
+            "black": info["head"],
+            "reds": [m for m, _ in info["head_dress"]],
+            "has_ball": False,
+            "pitch": 0.0,
+            "x_body0": 6.9,
+        }
+    ]
+    for seg in info["segments"]:
+        chain.append(
+            {
+                "name": f"clanek-{seg['index']+1:02d}",
+                "black": seg["mesh"],
+                "reds": seg["reds"],
+                "has_ball": True,
+                "pitch": seg["pitch"],
+                "x_body0": seg["x_body0"],
+            }
+        )
+    chain.append(
+        {
+            "name": "vejir",
+            "black": info["fin_func"],
+            "reds": info["fin_leaves"],
+            "has_ball": True,
+            "pitch": 0.0,
+            "x_body0": 8.0,
+        }
+    )
+    limit = USABLE - 4.0
+    groups: list[list[dict]] = []
+    cur: list[dict] = []
+    origin = 0.0
+    base = 0.0
+    for item in chain:
+        meshes = [item["black"], *item["reds"]]
+        local_min = min(float(m.bounds[0, 0]) for m in meshes)
+        local_max = max(float(m.bounds[1, 0]) for m in meshes)
+        world_min = origin + local_min
+        world_max = origin + local_max
+        if cur and world_max - base > limit:
+            groups.append(cur)
+            cur = []
+            base = world_min
+        if not cur:
+            base = world_min
+        placed = dict(item)
+        placed["origin"] = origin
+        placed["narrow"] = bool(cur) and item["has_ball"]
+        cur.append(placed)
+        origin += item["pitch"]
+    if cur:
+        groups.append(cur)
 
     plate_files = []
     desc = (
-        "Artikulovany drak 750 mm. Tisknout tak jak lezi, bez podpor. "
-        "Patku pod kouli pred slozenim ulomit. PLA, tryska 0,4 mm, vrstva 0,20 mm, 6 sten."
+        "Artikulovany drak 750 mm, jeden spojený kus páteře. "
+        "Tisknout tak jak leží, bez podpor, části nerozdělovat. "
+        "Patku pod koulí po tisku ulomit. PLA, tryska 0,4 mm, vrstva 0,20 mm, 6 stěn."
     )
-    for i, plate in enumerate(body_plates, start=1):
-        name = f"drak-telo-{i}.3mf"
-        write_3mf(plate, OUT_DIR / name, f"Drak telo {i}", desc)
-        plate_files.append(f"modely/{name}  ({len(plate)} článku)")
-        print(f"  {name}: {len(plate)} dílů")
-    for i, plate in enumerate(other_plates, start=1):
-        name = f"drak-hlava-nohy-{i}.3mf"
-        write_3mf(plate, OUT_DIR / name, f"Drak hlava a nohy {i}", desc)
-        plate_files.append(f"modely/{name}  (hlava, nohy, vějíř)")
-        print(f"  {name}: {len(plate)} dílů")
-    for i, plate in enumerate(red_plates, start=1):
-        name = f"drak-cervena-{i}.3mf"
-        write_3mf(
-            plate,
-            OUT_DIR / name,
-            f"Drak cervene dily {i}",
-            "Cervene hrebeny, rohy, oci a listy ocasu. Brim 4 mm. Bez podpor.",
-        )
-        plate_files.append(f"modely/{name}  (červené díly, {len(plate)} ks)")
+    for gi, group in enumerate(groups, start=1):
+        objects = []
+        built = []
+        for item in group:
+            if item["has_ball"]:
+                is_last = item is group[-1] and item["name"] != "vejir"
+                support = segment_support(
+                    SPINE,
+                    item["x_body0"],
+                    max(item["pitch"], 16.0),
+                    item["narrow"],
+                    rear=is_last,
+                )
+                parts = [item["black"].copy(), support, *[r.copy() for r in item["reds"]]]
+            else:
+                parts = [item["black"].copy(), *[r.copy() for r in item["reds"]]]
+            mesh = unite(parts, item["name"])
+            mesh.apply_translation((item["origin"], 0.0, 0.0))
+            built.append(mesh)
+            objects.append((item["name"], mesh, BLACK))
+        for a, b, na, nb in zip(built, built[1:], group, group[1:]):
+            vol = overlap_volume(a, b)
+            if vol > 2.0:
+                raise RuntimeError(f"{na['name']} a {nb['name']} se prolínají o {vol:.1f} mm3")
+        mins = np.min([m.bounds[0] for m in built], axis=0)
+        for mesh in built:
+            mesh.apply_translation((-mins[0] + MARGIN, -mins[1] + MARGIN, -mins[2]))
+        ext = np.max([m.bounds[1] for m in built], axis=0) - np.min([m.bounds[0] for m in built], axis=0)
+        if ext[0] > USABLE + 0.5 or ext[1] > USABLE + 0.5:
+            raise RuntimeError(f"kus {gi} se nevejde na podložku: {ext[:2].round(1)}")
+        if ext[2] > 245:
+            raise RuntimeError(f"kus {gi} je vyšší než tiskárna: {ext[2]:.0f} mm")
+        name = f"drak-kus-{gi}.3mf"
+        write_3mf(objects, OUT_DIR / name, f"Drak kus {gi}", desc)
+        plate_files.append(f"modely/{name}  (spojený kus, {len(objects)} článků)")
+        print(f"  {name}: {len(objects)} článků, {ext[0]:.0f}×{ext[1]:.0f} mm")
+
+    leg_items = [(n, pr, BLACK) for n, pr, _fn, _pitch in info["legs"]]
+    leg_plates = pack_plates(leg_items)
+    for i, plate in enumerate(leg_plates, start=1):
+        name = f"drak-nohy-{i}.3mf"
+        write_3mf(plate, OUT_DIR / name, f"Drak nohy {i}", desc)
+        plate_files.append(f"modely/{name}  (nohy, {len(plate)} dílů)")
         print(f"  {name}: {len(plate)} dílů")
 
     write_settings(ROOT / "NASTAVENI_DRAK.txt", info, plate_files)
