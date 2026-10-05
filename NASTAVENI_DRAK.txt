@@ -1,0 +1,84 @@
+Artikulovaný drak — 750 mm
+Tisk na Creality Ender 3 V3 SE, tryska 0,4 mm, PLA
+
+JAK JE DLOUHÝ
+  V natažené poloze 750 mm od špičky čenichu po konec ocasního vějíře.
+  Článků páteře: 28. Hlava, čtyři nohy a vějíř jsou navíc.
+  Ohnutý na stole je kratší. Délka 75 cm je délka řetězu, ne krabice.
+
+PROČ SE TO NEROZPADNE A PŘITOM TO CHODÍ
+  Kloub je koule Ø 9.6 mm v objímce.
+  Otvor objímky má Ø 8.3 mm, tedy o 1.3 mm méně než koule.
+  Koule zapadne až za rovník. Do boku ani ohnutím nevypadne.
+  Ven jde jen přímým tahem po ose, když se věnec objímky rozevře. Na to je potřeba síla.
+  Uvnitř je vůle 0.40 mm, proto se článek točí.
+  Změřené ohnutí jednoho kloubu: do stran 26°, nahoru a dolů 26°.
+  Na 28 kloubech z toho vznikne plynulé esíčko i zvednutý ocas.
+  Dřík koule má Ø 4.8 mm, věnec objímky je tlustý 2.5 mm.
+  Čtyři zářezy ve věnci jsou schválně: při nasazení se objímka rozevře a pak zase sevře.
+  Na konci každého zářezu je kulatá dírka, ať věnec nepraskne.
+
+JAK TO VYPADÁ
+  Černé tělo, červený hřbet, rohy, oči a ocasní vějíř — jako na předloze.
+  Každý článek má hřeben se třemi trny sklopenými k ocasu.
+  Ocas končí brkem, na kterém je pět červených listů.
+  Rohy a oči jsou samostatné červené díly.
+  Na břiše článku je číslo. 01 je u hlavy, vyšší číslo pokračuje k ocasu.
+  Větší kolík na článku je směrem k hlavě. Hřeben na něj pasuje jen jedním směrem,
+  trny se kloní k ocasu.
+
+SOUBORY
+  modely/drak-telo-1.3mf  (28 článku)
+  modely/drak-hlava-nohy-1.3mf  (hlava, nohy, vějíř)
+  modely/drak-cervena-1.3mf  (červené díly, 55 ks)
+
+JAK TO POLOŽIT
+  Díly už leží tak, jak se mají tisknout. V sliceru je neotáčej.
+  Články leží břichem na podložce, trny se tisknou zvlášť špičkou nahoru.
+  Podpěry: vypnout.
+  U každé koule je žebrovaná patka. Ta patka je jen na tisk.
+  Než článek nasadíš, patku ulom. Je proříznutá, jde rukou, zbytek případně
+  štípni kleštěmi. Patka do objímky nepatří.
+  Otřep na plochém spodku koule nevadí, ta plocha do stěny objímky nedosáhne.
+
+MATERIÁL
+  Černé desky: PLA černá. Červená deska: PLA červená.
+  Dvě barvy v jednom tisku nejsou potřeba, díly se nasadí na kolíky.
+
+  Tryska          205 °C (první vrstva 210 °C)
+  Podložka        60 °C
+  Výška vrstvy    0,20 mm
+  Šířka čáry      0,42 mm
+  Stěny           6
+                  věnec objímky má 2.5 mm, při šesti stěnách je plný
+  Plné vrstvy     5 dole a 5 nahoře
+  Výplň           20 % gyroid
+                  hlava snese 15 %, klouby rozhodují stěny, ne výplň
+  Rychlost        vnější stěny 40 mm/s
+                  vnitřní stěny 50 mm/s
+                  na číslech a zářezech nezrychluj
+  Chlazení        100 % od 4. vrstvy
+  Podpěry         vypnout
+  Brim            články nepotřebují
+                  červená deska, rohy a vějíř: brim 4 mm
+
+SKLÁDÁNÍ
+  1. Ulom patky pod koulemi.
+  2. Článek 01 zatlač koulí do krku hlavy. Další článek do objímky předchozího.
+     Tlač rovně v ose, ne do boku. Má to jít ztuha. Když věnec bělá, přestaň
+     a zkus to znovu rovně — nechce to křivé páčení.
+  3. Ocasní vějíř nasuň do posledního článku.
+  4. Stehna nasuň do ramenního a kyčelního článku (mají otvor na boku).
+     Holeň do stehna, tlapku do holeně. Drápy míří dopředu.
+  5. Hřeben se stejným číslem nacvakni na kolíky článku. Větší dírka patří
+     na větší kolík (směr k hlavě).
+  6. Rohy a lícní trny nasuň na kolíky hlavy. Oči vtlač do důlků.
+  7. Červené listy ocasu nasuň na kolíky vějíře.
+
+KDYŽ TO NEJDE NASADIT
+  Díra po tisku bývá o chlup menší. Stačí pár tahů pilníkem na kolíku
+  nebo na kouli, neubírej věnec objímky. Když ubereš věnec, článek začne vypadávat.
+
+POKLÁDÁNÍ
+  Drž trup a ohni ho do strany nebo nahoru. Neškubej jeden článek od druhého.
+  Nohy ohnutím nastav, jak mají stát.
