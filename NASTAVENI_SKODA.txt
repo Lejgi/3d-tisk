@@ -11,7 +11,8 @@ PARAMETRY Z AUDI (zachované)
   Černý rám          výška 8 mm, kapsa vpředu 4 mm
   Bílá plocha        10 mm, horní hrany zkosené 3,5 mm (jako Audi profil)
   Podstavec          výška 15 mm, zkosení ~12 mm
-  Čepy               15 × 8 × 15 mm, vůle ve drážce 0,3 mm
+  Čepy               15 × 8 mm, srostlé s kruhem, délka ~ BASE_H pod spodek loga
+                     (zasunou se skrz podstavec; vůle ve drážce 0,3 mm)
 
 ZVĚTŠENO PROTI AUDI
   Audi kruhy cca      222 × 97 mm

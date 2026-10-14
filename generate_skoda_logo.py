@@ -12,6 +12,7 @@ Sized larger than the Audi reference (~222×97×8 mm rings): Škoda circle Ø300
 from __future__ import annotations
 
 import io
+import math
 import re
 import zipfile
 from pathlib import Path
@@ -23,7 +24,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 import trimesh
-from shapely.geometry import Polygon
+from shapely.geometry import LineString, Point, Polygon
 from shapely.validation import make_valid
 from svgpathtools import parse_path
 
@@ -118,12 +119,38 @@ def build_face_parts_mm() -> tuple[float, float, Polygon]:
 
     r_outer = 12.0 * scale
     r_inner = (12.0 - SVG_RING_INSET) * scale
+    arrow_mm = extend_arrow_to_ring(arrow_mm, r_inner)
     return r_outer, r_inner, arrow_mm
 
 
-def face_polygon_mm(r_outer: float, r_inner: float, arrow: Polygon):
-    from shapely.geometry import Point
+def extend_arrow_to_ring(arrow: Polygon, r_inner: float) -> Polygon:
+    """Classic Škoda badge: arrow tip meets the inner edge of the ring.
 
+    The simple-icons SVG leaves a ~16 mm gap; bridge it so black/white print as
+    one solid piece and the tip reads correctly.
+    """
+    coords = np.asarray(arrow.exterior.coords, dtype=float)
+    tip = coords[int(np.argmax(coords[:, 0] * 0.85 + coords[:, 1] * -0.15))]
+    # Prefer the true farthest point from origin in the tip quadrant.
+    tips = coords[(coords[:, 0] > 40) & (coords[:, 1] < 0)]
+    if len(tips):
+        tip = tips[np.argmax(np.linalg.norm(tips, axis=1))]
+    dist = float(np.linalg.norm(tip))
+    if dist < 1e-6 or dist >= r_inner - 0.5:
+        return arrow
+    direction = tip / dist
+    # Wide enough bridge to keep a printable neck into the ring.
+    bridge = LineString([tip * 0.92, direction * (r_inner + 0.4)]).buffer(
+        7.0, cap_style=2, join_style=2
+    )
+    disk = Point(0, 0).buffer(r_inner + 0.05, resolution=96)
+    extended = make_valid(arrow.union(bridge).intersection(disk))
+    if extended.geom_type == "MultiPolygon":
+        extended = max(extended.geoms, key=lambda g: g.area)
+    return make_valid(extended)
+
+
+def face_polygon_mm(r_outer: float, r_inner: float, arrow: Polygon):
     ring = Point(0, 0).buffer(r_outer, resolution=96).difference(
         Point(0, 0).buffer(r_inner, resolution=96)
     )
@@ -202,16 +229,23 @@ def make_black_cq(r_outer: float, r_inner: float, arrow: Polygon) -> cq.Workplan
     )
     body = body.cut(pocket)
 
-    # Two Audi-style tabs under the logo.
-    ymin = outer.bounds[1]
-    tab_top = ymin + 2.0
-    tab_bot = tab_top - TAB_H
+    # Two Audi-style tabs fused into the ring.
+    # At x=±TAB_SPACING/2 the circle sits higher than at x=0, so tabs must:
+    #  1) overlap the local ring chord (not the bbox ymin), and
+    #  2) reach BASE_H below the global bottom so the whole logo clears the socle.
+    r_black = r_outer + LIP
+    y_global_bottom = -r_black
+    tab_overlap = 4.0  # mm sunk into the ring so the union is solid
     for sign in (-1.0, 1.0):
         cx = sign * (TAB_SPACING / 2.0)
+        y_ring = -math.sqrt(max(r_black * r_black - cx * cx, 0.0))
+        tab_top = y_ring + tab_overlap
+        tab_bot = y_global_bottom - BASE_H
+        tab_h = tab_top - tab_bot
         tab = (
             cq.Workplane("XY")
             .center(cx, (tab_top + tab_bot) / 2.0)
-            .rect(TAB_W, TAB_H)
+            .rect(TAB_W, tab_h)
             .extrude(BLACK_Z)
         )
         body = body.union(tab)
