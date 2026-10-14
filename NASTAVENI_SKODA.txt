@@ -1,0 +1,37 @@
+Škoda logo lightbox — stojánek na stůl
+Stejný styl jako Logo Audi.3mf, jen Škoda a větší.
+
+SOUBORY
+  modely/skoda-logo-lightbox.3mf   (všechny 3 díly pohromadě)
+  modely/skoda-logo-cerna.3mf      (černý rám + čepy)
+  modely/skoda-logo-bila.3mf       (bílá / milky difuzní plocha)
+  modely/skoda-logo-podstavec.3mf  (černý podstavec)
+
+PARAMETRY Z AUDI (zachované)
+  Černý rám          výška 8 mm, kapsa vpředu 4 mm
+  Bílá plocha        10 mm, horní hrany zkosené 3,5 mm (jako Audi profil)
+  Podstavec          výška 15 mm, zkosení ~12 mm
+  Čepy               15 × 8 × 15 mm, vůle ve drážce 0,3 mm
+
+ZVĚTŠENO PROTI AUDI
+  Audi kruhy cca      222 × 97 mm
+  Škoda kruh          Ø 300 mm (černý vnější průměr)
+  Podstavec           240 × 72 × 15 mm (Audi 170 × 60 × 15)
+
+SESTAVA
+  1) Bílou plochu vlepte / zatlačte do kapsy černého rámu (bílá dopředu).
+  2) Čepy černého rámu zasuňte do drážek v podstavci.
+  3) Volitelně dovnitř rámu LED pásek (milky PLA jako difuzor).
+
+TISK
+  Orientace         rovná zadní / spodní strana na podložku (Z nahoru)
+  Podpěry           vypnout
+  Materiál          PLA: černá + bílá / natural / milky
+  Tryska            0,4 mm
+  Výška vrstvy      0,20 mm
+  Stěny             3–4
+  Výplň             15–20 %
+  Podložka          60 °C, brim 5 mm u podstavce
+
+Generování znovu:  python3 generate_skoda_logo.py
+SVG znaku:         assets/skoda-winged-arrow.svg
